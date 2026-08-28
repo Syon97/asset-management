@@ -1,0 +1,133 @@
+<?php
+/** @var yii\web\View $this */
+/** @var int $totalHardwareAssets */
+/** @var int $pendingPrApprovals */
+/** @var app\models\PurchaseRequisition[] $pendingPrList */
+/** @var int $lowStockItems */
+/** @var app\models\Stock[] $lowStockList */
+/** @var int $warrantyExpiringSoon */
+/** @var app\models\HardwareAsset[] $warrantyList */
+/** @var array $needsAttention */
+/** @var array $activityFeed */
+
+use yii\helpers\Html;
+use yii\helpers\Url;
+
+$this->title = 'Dashboard';
+?>
+<div class="dashboard-index">
+    <h1><?= Html::encode($this->title) ?></h1>
+    <p class="text-muted">Asset Management System — overview will appear here.</p>
+
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <a href="<?= Url::to(['/hardware-asset/index']) ?>" class="text-decoration-none text-reset">
+                <div class="card card-stat">
+                    <div class="card-body">
+                        <div class="stat-label">Total Hardware Assets</div>
+                        <div class="stat-value"><?= $totalHardwareAssets ?></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat accent-amber h-100">
+                <div class="card-body">
+                    <a href="<?= Url::to(['/purchase-requisition/index']) ?>" class="text-decoration-none text-reset">
+                        <div class="stat-label">Pending PR Approvals</div>
+                        <div class="stat-value"><?= $pendingPrApprovals ?></div>
+                    </a>
+                    <?php if (!empty($pendingPrList)): ?>
+                        <ul class="list-unstyled small mt-2 mb-0">
+                            <?php foreach ($pendingPrList as $pr): ?>
+                                <li><?= Html::a(Html::encode($pr->pr_no), ['/purchase-requisition/view', 'id' => $pr->id]) ?> <span class="text-muted">(<?= strtoupper($pr->status) ?>)</span></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat accent-danger h-100">
+                <div class="card-body">
+                    <a href="<?= Url::to(['/stock/index']) ?>" class="text-decoration-none text-reset">
+                        <div class="stat-label">Low Stock Items</div>
+                        <div class="stat-value"><?= $lowStockItems ?></div>
+                    </a>
+                    <?php if (!empty($lowStockList)): ?>
+                        <ul class="list-unstyled small mt-2 mb-0">
+                            <?php foreach ($lowStockList as $stock): ?>
+                                <li><?= Html::encode($stock->catalogItem->item_name ?? '-') ?> <span class="text-muted">(<?= $stock->quantity_on_hand ?> @ <?= Html::encode($stock->department->name ?? '-') ?>)</span></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat accent-success h-100">
+                <div class="card-body">
+                    <a href="<?= Url::to(['/hardware-asset/index']) ?>" class="text-decoration-none text-reset">
+                        <div class="stat-label">Warranty Expiring Soon</div>
+                        <div class="stat-value"><?= $warrantyExpiringSoon ?></div>
+                    </a>
+                    <?php if (!empty($warrantyList)): ?>
+                        <ul class="list-unstyled small mt-2 mb-0">
+                            <?php foreach ($warrantyList as $asset): ?>
+                                <li><?= Html::a(Html::encode($asset->asset_tag), ['/hardware-asset/view', 'id' => $asset->id]) ?> <span class="text-muted">(<?= Html::encode($asset->warranty_end_date) ?>)</span></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h5 class="mb-3">Needs Attention</h5>
+            <div class="pr-action-card" style="max-width: 100%;">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <?= Html::a('Draft Purchase Requisitions', ['/purchase-requisition/index'], ['class' => '']) ?>
+                        <span class="badge-status status-draft"><?= $needsAttention['draftPrCount'] ?></span>
+                    </li>
+                    <li class="mb-2">
+                        <?= Html::a('Draft Purchase Orders', ['/purchase-order/index'], ['class' => '']) ?>
+                        <span class="badge-status status-draft"><?= $needsAttention['draftPoCount'] ?></span>
+                    </li>
+                    <li class="mb-2">
+                        <?= Html::a('Draft Goods Receipts (not yet approved, stock not updated)', ['/goods-receipt/index'], ['class' => '']) ?>
+                        <span class="badge-status status-draft"><?= $needsAttention['draftGrnCount'] ?></span>
+                    </li>
+                    <li class="mb-2">
+                        <?= Html::a('Unassigned Active Assets', ['/hardware-asset/index'], ['class' => '']) ?>
+                        <span class="badge-status status-draft"><?= $needsAttention['unassignedCount'] ?></span>
+                    </li>
+                    <li>
+                        <?= Html::a('Review Possible Duplicate Catalog Items', ['/item-catalog/duplicates']) ?>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="mb-3">Recent Activity</h5>
+            <div class="pr-action-card" style="max-width: 100%;">
+                <?php if (empty($activityFeed)): ?>
+                    <p class="text-muted mb-0">No activity yet.</p>
+                <?php else: ?>
+                    <ul class="list-unstyled mb-0">
+                        <?php foreach ($activityFeed as $event): ?>
+                            <li class="mb-2 pb-2" style="border-bottom: 1px solid var(--color-border);">
+                                <i class="bi <?= $event['icon'] ?> text-muted"></i>
+                                <?= Html::a(Html::encode($event['message']), $event['url']) ?>
+                                <br><small class="text-muted"><?= Html::encode($event['time']) ?></small>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,160 @@
+<?php
+
+namespace app\controllers;
+
+use Yii;
+use app\models\HardwareAsset;
+use app\models\PurchaseRequisition;
+use app\models\PurchaseOrder;
+use app\models\GoodsReceipt;
+use app\models\AssetAssignment;
+use app\models\StockIssue;
+use app\models\Stock;
+use yii\helpers\Url;
+use yii\web\Controller;
+
+class DashboardController extends Controller
+{
+    /**
+     * No per-item reorder level exists yet in the schema, so "low stock"
+     * uses a flat threshold as a starting point. Worth adding a proper
+     * reorder_level field to Item Catalog later so this can be tuned
+     * per item instead of one number for everything.
+     */
+    const LOW_STOCK_THRESHOLD = 5;
+
+    const WARRANTY_WARNING_DAYS = 30;
+
+    const PREVIEW_LIMIT = 5;
+
+    public function actionIndex()
+    {
+        $pendingPrQuery = PurchaseRequisition::find()
+            ->where(['status' => [
+                PurchaseRequisition::STATUS_SUBMITTED,
+                PurchaseRequisition::STATUS_VERIFIED,
+                PurchaseRequisition::STATUS_REVIEWED,
+                PurchaseRequisition::STATUS_RECEIVED,
+            ]]);
+
+        $lowStockQuery = Stock::find()->where(['<=', 'quantity_on_hand', self::LOW_STOCK_THRESHOLD]);
+
+        $warrantyQuery = HardwareAsset::find()
+            ->where(['status' => HardwareAsset::STATUS_ACTIVE])
+            ->andWhere(['between', 'warranty_end_date',
+                date('Y-m-d'),
+                date('Y-m-d', strtotime('+' . self::WARRANTY_WARNING_DAYS . ' days')),
+            ]);
+
+        return $this->render('index', [
+            'totalHardwareAssets' => HardwareAsset::find()->where(['status' => HardwareAsset::STATUS_ACTIVE])->count(),
+
+            'pendingPrApprovals' => (clone $pendingPrQuery)->count(),
+            'pendingPrList' => (clone $pendingPrQuery)->orderBy(['updated_at' => SORT_DESC])->limit(self::PREVIEW_LIMIT)->all(),
+
+            'lowStockItems' => (clone $lowStockQuery)->count(),
+            'lowStockList' => (clone $lowStockQuery)->orderBy(['quantity_on_hand' => SORT_ASC])->limit(self::PREVIEW_LIMIT)->all(),
+
+            'warrantyExpiringSoon' => (clone $warrantyQuery)->count(),
+            'warrantyList' => (clone $warrantyQuery)->orderBy(['warranty_end_date' => SORT_ASC])->limit(self::PREVIEW_LIMIT)->all(),
+
+            'needsAttention' => $this->buildNeedsAttention(),
+            'activityFeed' => $this->buildActivityFeed(),
+        ]);
+    }
+
+    /**
+     * Draft items nobody has acted on yet, and assets sitting unassigned -
+     * the stuff that's easy to quietly forget since nothing else nudges
+     * anyone about it.
+     */
+    private function buildNeedsAttention()
+    {
+        $draftPrs = PurchaseRequisition::find()->where(['status' => PurchaseRequisition::STATUS_DRAFT]);
+        $draftPos = PurchaseOrder::find()->where(['status' => PurchaseOrder::STATUS_DRAFT]);
+        $draftGrns = GoodsReceipt::find()->where(['status' => GoodsReceipt::STATUS_DRAFT]);
+        $unassignedAssets = HardwareAsset::find()
+            ->where(['status' => HardwareAsset::STATUS_ACTIVE])
+            ->andWhere(['or', ['current_holder_type' => null], ['current_holder_id' => null]]);
+
+        return [
+            'draftPrCount' => (clone $draftPrs)->count(),
+            'draftPoCount' => (clone $draftPos)->count(),
+            'draftGrnCount' => (clone $draftGrns)->count(),
+            'unassignedCount' => (clone $unassignedAssets)->count(),
+        ];
+    }
+
+    /**
+     * A cross-module timeline. Nothing keeps a single unified log, so this
+     * pulls a recent batch from each relevant table, tags it with a
+     * message + link, and merges everything by timestamp. Good enough for
+     * a dashboard preview; not meant as a full audit log.
+     */
+    private function buildActivityFeed($limit = 15)
+    {
+        $events = [];
+
+        foreach (PurchaseRequisition::find()->orderBy(['updated_at' => SORT_DESC])->limit(10)->all() as $pr) {
+            $events[] = [
+                'time' => $pr->updated_at,
+                'icon' => 'bi-file-earmark-text',
+                'message' => $pr->pr_no . ' is now ' . strtoupper($pr->status),
+                'url' => Url::to(['/purchase-requisition/view', 'id' => $pr->id]),
+            ];
+        }
+
+        foreach (PurchaseOrder::find()->orderBy(['updated_at' => SORT_DESC])->limit(10)->all() as $po) {
+            $events[] = [
+                'time' => $po->updated_at,
+                'icon' => 'bi-cart-check',
+                'message' => ($po->erp_po_no ?: $po->po_no) . ' is now ' . strtoupper($po->status),
+                'url' => Url::to(['/purchase-order/view', 'id' => $po->id]),
+            ];
+        }
+
+        foreach (GoodsReceipt::find()->where(['!=', 'status', GoodsReceipt::STATUS_DRAFT])->orderBy(['updated_at' => SORT_DESC])->limit(10)->all() as $grn) {
+            $events[] = [
+                'time' => $grn->updated_at,
+                'icon' => 'bi-clipboard-check',
+                'message' => $grn->grn_no . ' ' . strtoupper($grn->status),
+                'url' => Url::to(['/goods-receipt/view', 'id' => $grn->id]),
+            ];
+        }
+
+        foreach (AssetAssignment::find()->orderBy(['assigned_at' => SORT_DESC])->limit(10)->all() as $assignment) {
+            $assetTag = $assignment->hardwareAsset->asset_tag ?? ('#' . $assignment->hardware_asset_id);
+            $url = Url::to(['/hardware-asset/view', 'id' => $assignment->hardware_asset_id]);
+
+            $events[] = [
+                'time' => $assignment->assigned_at,
+                'icon' => 'bi-person-check',
+                'message' => $assetTag . ' assigned to ' . $assignment->getHolderLabel(),
+                'url' => $url,
+            ];
+            if ($assignment->status === AssetAssignment::STATUS_RETURNED && $assignment->returned_at) {
+                $events[] = [
+                    'time' => $assignment->returned_at,
+                    'icon' => 'bi-person-x',
+                    'message' => $assetTag . ' returned/transferred from ' . $assignment->getHolderLabel(),
+                    'url' => $url,
+                ];
+            }
+        }
+
+        foreach (StockIssue::find()->orderBy(['created_at' => SORT_DESC])->limit(10)->all() as $issue) {
+            $events[] = [
+                'time' => $issue->created_at,
+                'icon' => 'bi-box-arrow-right',
+                'message' => $issue->quantity . 'x ' . ($issue->catalogItem->item_name ?? 'item') . ' issued to ' . $issue->getHolderLabel(),
+                'url' => Url::to(['/stock-issue/view', 'id' => $issue->id]),
+            ];
+        }
+
+        usort($events, function ($a, $b) {
+            return strtotime($b['time']) <=> strtotime($a['time']);
+        });
+
+        return array_slice($events, 0, $limit);
+    }
+}
