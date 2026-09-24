@@ -31,13 +31,33 @@ $config = [
             'class' => \yii\caching\FileCache::class,
         ],
         'user' => [
-            'identityClass' => \app\models\User::class,
+            'identityClass' => \app\models\UserAccount::class,
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-        'mailer' => \yii\mail\MailerInterface::class,
+        'mailer' => [
+            'class' => \yii\symfonymailer\Mailer::class,
+            // TODO: replace with real SMTP details once confirmed. Until
+            // then, useFileTransport writes emails to runtime/mail/ as
+            // .eml files instead of actually sending - safe default, lets
+            // the notification code run and be inspected without risking
+            // real emails going out to real employees before this is
+            // properly configured.
+            'useFileTransport' => true,
+            /*
+            'useFileTransport' => false,
+            'transport' => [
+                'scheme' => 'smtp',
+                'host' => 'smtp.example.com',
+                'username' => 'your-username',
+                'password' => 'your-password',
+                'port' => 587,
+                'encryption' => 'tls',
+            ],
+            */
+        ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
             'targets' => [
@@ -57,14 +77,12 @@ $config = [
             'charset' => 'utf8mb4',
         ],
 
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
             ],
         ],
-        */
     ],
     'params' => $params,
 ];

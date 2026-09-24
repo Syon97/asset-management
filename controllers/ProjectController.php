@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\Project;
 use app\models\ProjectSearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * ProjectController implements the CRUD actions for Project model.
  */
-class ProjectController extends Controller
+class ProjectController extends OperationsController
 {
     /**
      * @inheritDoc

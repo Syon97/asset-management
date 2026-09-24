@@ -26,6 +26,14 @@ $config = [
             ],
         ],
         'db' => $db,
+
+        'db_staff_gwidb' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=localhost;dbname=staff_gwidb',
+            'username' => '',
+            'password' => '',
+            'charset' => 'utf8mb4',
+        ],
     ],
     'params' => $params,
     /*

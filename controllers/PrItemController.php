@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\PrItem;
 use app\models\PrItemSearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * PrItemController implements the CRUD actions for PrItem model.
  */
-class PrItemController extends Controller
+class PrItemController extends OperationsController
 {
     /**
      * @inheritDoc

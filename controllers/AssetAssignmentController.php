@@ -13,7 +13,7 @@ class AssetAssignmentController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(),[
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -22,7 +22,7 @@ class AssetAssignmentController extends Controller
                     'return' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     /**

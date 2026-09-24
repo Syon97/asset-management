@@ -17,7 +17,7 @@ class PurchaseRequisitionController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -30,7 +30,7 @@ class PurchaseRequisitionController extends Controller
                     'reject' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionIndex()

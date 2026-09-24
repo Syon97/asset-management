@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\Department;
 use app\models\DepartmentSearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * DepartmentController implements the CRUD actions for Department model.
  */
-class DepartmentController extends Controller
+class DepartmentController extends OperationsController
 {
     /**
      * @inheritDoc

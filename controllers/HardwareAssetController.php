@@ -7,8 +7,10 @@ use app\models\HardwareAsset;
 use app\models\HardwareAssetSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 use yii\web\UploadedFile;
+use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\helpers\Url;
 use Endroid\QrCode\Builder\Builder;
@@ -25,12 +27,39 @@ class HardwareAssetController extends Controller
                     'delete' => ['POST'],
                 ],
             ],
+            'access' => [
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        // Generic users can only reach index/view/qr/print-label,
+                        // and only for assets currently assigned to them -
+                        // enforced inside each action below, not just by
+                        // hiding the link.
+                        'actions' => ['index', 'view', 'qr', 'print-label'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
+                        'actions' => ['create', 'update', 'delete'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                        'matchCallback' => function ($rule, $action) {
+                            return !Yii::$app->user->isGuest && Yii::$app->user->identity->canAccessOperations();
+                        },
+                    ],
+                ],
+            ],
         ];
     }
 
     public function actionIndex()
     {
         $searchModel = new HardwareAssetSearch();
+
+        if (!Yii::$app->user->identity->canAccessOperations()) {
+            $searchModel->restrictToOwnStaffId = Yii::$app->user->identity->staff_id;
+        }
+
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
@@ -41,8 +70,11 @@ class HardwareAssetController extends Controller
 
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+        $this->checkOwnAssetAccess($model);
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
@@ -168,6 +200,8 @@ class HardwareAssetController extends Controller
     public function actionQr($id)
     {
         $model = $this->findModel($id);
+        $this->checkOwnAssetAccess($model);
+
         $url = Url::to(['/hardware-asset/view', 'id' => $model->id], true);
 
         $builder = new Builder(
@@ -188,11 +222,31 @@ class HardwareAssetController extends Controller
      */
     public function actionPrintLabel($id)
     {
+        $model = $this->findModel($id);
+        $this->checkOwnAssetAccess($model);
+
         $this->layout = false;
 
         return $this->render('print-label', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
+    }
+
+    /**
+     * A Generic user can only view/print-label/QR-scan an asset that's
+     * currently assigned to them. Operations roles (Purchaser/Financer/
+     * Admin) always have full access.
+     */
+    private function checkOwnAssetAccess($model)
+    {
+        if (Yii::$app->user->identity->canAccessOperations()) {
+            return;
+        }
+
+        $ownStaffId = Yii::$app->user->identity->staff_id;
+        if ($model->current_holder_type !== 'staff' || (int) $model->current_holder_id !== (int) $ownStaffId) {
+            throw new ForbiddenHttpException('You can only view assets assigned to you.');
+        }
     }
 
     protected function findModel($id)

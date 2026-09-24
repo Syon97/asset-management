@@ -10,11 +10,12 @@ use yii\web\NotFoundHttpException;
 use yii\web\UploadedFile;
 use yii\filters\VerbFilter;
 
+
 class PrAttachmentController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -22,7 +23,7 @@ class PrAttachmentController extends Controller
                     'delete' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionUpload($prId)

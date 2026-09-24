@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use Yii;
 use app\models\StockIssue;
 use app\models\StockIssueSearch;
@@ -10,7 +11,7 @@ use app\models\StockLedger;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 
-class StockIssueController extends Controller
+class StockIssueController extends OperationsController
 {
     public function actionIndex()
     {

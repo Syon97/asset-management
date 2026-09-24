@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\ItemCatalog;
 use app\models\ItemCatalogSearch;
 use yii\web\Controller;
@@ -12,7 +13,7 @@ use Yii;
 /**
  * ItemCatalogController implements the CRUD actions for ItemCatalog model.
  */
-class ItemCatalogController extends Controller
+class ItemCatalogController extends OperationsController
 {
     /**
      * @inheritDoc

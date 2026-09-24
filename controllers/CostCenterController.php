@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\CostCenter;
 use app\models\CostCenterSearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * CostCenterController implements the CRUD actions for CostCenter model.
  */
-class CostCenterController extends Controller
+class CostCenterController extends OperationsController
 {
     /**
      * @inheritDoc

@@ -14,7 +14,7 @@ class GrnAttachmentController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -22,7 +22,7 @@ class GrnAttachmentController extends Controller
                     'delete' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionUpload($grnId)

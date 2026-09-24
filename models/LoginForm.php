@@ -11,7 +11,7 @@ use yii\base\Security;
 /**
  * LoginForm is the model behind the login form.
  *
- * @property-read User|null $user
+ * @property-read UserAccount|null $user
  *
  */
 class LoginForm extends Model
@@ -19,7 +19,7 @@ class LoginForm extends Model
     public string $username = '';
     public string $password = '';
     public bool $rememberMe = true;
-    private User|null $_user = null;
+    private UserAccount|null $_user = null;
     private bool $_userLoaded = false;
     public function __construct(private readonly Security $security, $config = [])
     {
@@ -54,7 +54,7 @@ class LoginForm extends Model
         if (!$this->hasErrors()) {
             $user = $this->getUser();
 
-            if (!$user || !$this->security->validatePassword($this->password, $user->passwordHash)) {
+            if (!$user || !$user->validatePassword($this->password)) {
                 $this->addError($attribute, 'Incorrect username or password.');
             }
         }
@@ -67,7 +67,13 @@ class LoginForm extends Model
     public function login(): bool
     {
         if ($this->validate()) {
-            return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600 * 24 * 30 : 0);
+            $user = $this->getUser();
+            $success = Yii::$app->user->login($user, $this->rememberMe ? 3600 * 24 * 30 : 0);
+            if ($success) {
+                $user->last_login_at = date('Y-m-d H:i:s');
+                $user->save(false, ['last_login_at']);
+            }
+            return $success;
         }
 
         return false;
@@ -76,12 +82,12 @@ class LoginForm extends Model
     /**
      * Finds user by [[username]]
      *
-     * @return User|null
+     * @return UserAccount|null
      */
-    public function getUser(): User|null
+    public function getUser(): UserAccount|null
     {
         if (!$this->_userLoaded) {
-            $this->_user = User::findByUsername($this->username);
+            $this->_user = UserAccount::findByUsername($this->username);
             $this->_userLoaded = true;
         }
 

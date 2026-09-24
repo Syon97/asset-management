@@ -2,13 +2,14 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\AccessoryType;
 use app\models\AccessoryTypeSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
-class AccessoryTypeController extends Controller
+class AccessoryTypeController extends OperationsController
 {
     public function behaviors()
     {

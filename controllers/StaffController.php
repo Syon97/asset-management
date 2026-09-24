@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\Staff;
 use app\models\StaffSearch;
 use yii\web\Controller;
@@ -12,7 +13,7 @@ use Yii;
 /**
  * StaffController implements the CRUD actions for Staff model.
  */
-class StaffController extends Controller
+class StaffController extends OperationsController
 {
     /**
      * @inheritDoc
@@ -90,9 +91,17 @@ class StaffController extends Controller
         $service = new \app\components\StaffSyncService();
         $stats = $service->sync();
 
-        Yii::$app->session->setFlash('success',
-            "Synced from staff_gwidb: {$stats['created']} new, {$stats['updated']} updated (of {$stats['total']} total)."
-        );
+        $message = "Synced from staff_gwidb: {$stats['created']} new, {$stats['updated']} updated (of {$stats['total']} total).";
+        if ($stats['accounts_created'] > 0) {
+            $message .= " {$stats['accounts_created']} new login account(s) created.";
+        }
+        if ($stats['accounts_reactivated'] > 0) {
+            $message .= " {$stats['accounts_reactivated']} account(s) reactivated.";
+        }
+        if ($stats['deactivated_accounts'] > 0) {
+            $message .= " {$stats['deactivated_accounts']} login account(s) deactivated (status no longer Probation/Confirmed/Contract/Transfer).";
+        }
+        Yii::$app->session->setFlash('success', $message);
 
         return $this->redirect(['index']);
     }
@@ -109,7 +118,8 @@ class StaffController extends Controller
         $page = max(1, (int) Yii::$app->request->get('page', 1));
         $pageSize = 10;
 
-        $query = Staff::find()->with('department');
+        $query = Staff::find()->with('department')
+            ->andWhere(['in', 'UPPER(TRIM(status))', \app\components\StaffSyncService::ELIGIBLE_STATUSES]);
 
         if ($q !== '') {
             $query->andWhere(['or',

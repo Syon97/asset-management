@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\Category;
 use app\models\CategorySearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * CategoryController implements the CRUD actions for Category model.
  */
-class CategoryController extends Controller
+class CategoryController extends OperationsController
 {
     /**
      * @inheritDoc

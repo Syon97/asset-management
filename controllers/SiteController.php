@@ -7,6 +7,7 @@ namespace app\controllers;
 use Yii;
 use app\models\ContactForm;
 use app\models\LoginForm;
+use app\models\ChangePasswordForm;
 use yii\captcha\CaptchaAction;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
@@ -36,10 +37,13 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['logout'],
                 'rules' => [
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['login', 'error', 'captcha'],
+                        'allow' => true,
+                        'roles' => ['?', '@'],
+                    ],
+                    [
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -92,15 +96,41 @@ class SiteController extends Controller
             return $this->goHome();
         }
 
+        $this->layout = 'blank';
+
         $model = new LoginForm($this->security);
 
         if ($model->load($this->request->post()) && $model->login()) {
+            if (Yii::$app->user->identity->must_change_password) {
+                return $this->redirect(['change-password']);
+            }
             return $this->goBack();
         }
 
         $model->password = '';
 
         return $this->render('login', ['model' => $model]);
+    }
+
+    /**
+     * Mandatory password change - required on first login since the
+     * default password is the same as the username (staff ID), and
+     * available any time after that from a logged-in user's own account.
+     *
+     * @return Response|string
+     */
+    public function actionChangePassword(): Response|string
+    {
+        $this->layout = 'blank';
+
+        $model = new ChangePasswordForm();
+
+        if ($model->load($this->request->post()) && $model->changePassword()) {
+            Yii::$app->session->setFlash('success', 'Password updated.');
+            return $this->goHome();
+        }
+
+        return $this->render('change-password', ['model' => $model]);
     }
 
     /**

@@ -18,7 +18,7 @@ class PurchaseOrderController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -29,7 +29,7 @@ class PurchaseOrderController extends Controller
                     'set-erp-no' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionIndex()

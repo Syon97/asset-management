@@ -16,9 +16,11 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <h1><?= Html::encode($this->title) ?></h1>
 
+    <?php if (!Yii::$app->user->isGuest && Yii::$app->user->identity->canAccessOperations()): ?>
     <p>
         <?= Html::a('Add Hardware Asset', ['create'], ['class' => 'btn btn-primary']) ?>
     </p>
+    <?php endif; ?>
 
     <?php Pjax::begin(); ?>
 
@@ -67,7 +69,9 @@ $this->params['breadcrumbs'][] = $this->title;
                 'filter' => HardwareAsset::statusLabels(),
             ],
 
-            \app\helpers\GridHelper::actionColumn(),
+            (!Yii::$app->user->isGuest && Yii::$app->user->identity->canAccessOperations())
+                ? \app\helpers\GridHelper::actionColumn()
+                : \app\helpers\GridHelper::actionColumn('{view}'),
         ],
     ]); ?>
 

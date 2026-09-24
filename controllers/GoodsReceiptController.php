@@ -19,7 +19,7 @@ class GoodsReceiptController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
@@ -28,7 +28,7 @@ class GoodsReceiptController extends Controller
                     'set-external-ref' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionIndex()

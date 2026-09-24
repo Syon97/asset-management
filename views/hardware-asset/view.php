@@ -200,8 +200,10 @@ $warrantyBadge = [
         <?php
         $aaDepartmentOptions = \yii\helpers\ArrayHelper::map(\app\models\Department::find()->orderBy('name')->all(), 'id', 'name');
         $aaProjectOptions = \yii\helpers\ArrayHelper::map(\app\models\Project::find()->orderBy('project_name')->all(), 'id', 'project_name');
+        $canOps = !Yii::$app->user->isGuest && Yii::$app->user->identity->canAccessOperations();
         ?>
 
+        <?php if ($canOps): ?>
         <?php if (!$model->hasActiveHolder()): ?>
             <div class="pr-action-card">
                 <div class="pr-action-title">Assign This Asset</div>
@@ -261,13 +263,16 @@ $warrantyBadge = [
                 </div>
             </div>
         <?php endif; ?>
+        <?php endif; ?>
 
+        <?php if ($canOps): ?>
         <br>
         <?= Html::a('Edit', ['update', 'id' => $model->id], ['class' => 'btn btn-secondary mt-2']) ?>
         <?= Html::a('Delete', ['delete', 'id' => $model->id], [
             'class' => 'btn btn-outline-danger mt-2',
             'data' => ['method' => 'post', 'confirm' => 'Delete this hardware asset record?'],
         ]) ?>
+        <?php endif; ?>
     </div>
 
     <div class="col-md-4 text-center">

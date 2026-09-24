@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\controllers\base\OperationsController;
 use app\models\Supplier;
 use app\models\SupplierSearch;
 use yii\web\Controller;
@@ -11,7 +12,7 @@ use yii\filters\VerbFilter;
 /**
  * SupplierController implements the CRUD actions for Supplier model.
  */
-class SupplierController extends Controller
+class SupplierController extends OperationsController
 {
     /**
      * @inheritDoc

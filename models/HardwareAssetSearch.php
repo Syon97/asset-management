@@ -7,6 +7,13 @@ use yii\data\ActiveDataProvider;
 
 class HardwareAssetSearch extends HardwareAsset
 {
+    /**
+     * Set by the controller (never from request params) to force results
+     * down to just one staff member's own assigned assets - used for
+     * Generic users, who can only ever see their own equipment.
+     */
+    public $restrictToOwnStaffId = null;
+
     public function rules()
     {
         return [
@@ -33,6 +40,13 @@ class HardwareAssetSearch extends HardwareAsset
 
         if (!$this->validate()) {
             return $dataProvider;
+        }
+
+        if ($this->restrictToOwnStaffId !== null) {
+            $query->andWhere([
+                'current_holder_type' => 'staff',
+                'current_holder_id' => $this->restrictToOwnStaffId,
+            ]);
         }
 
         $query->andFilterWhere([

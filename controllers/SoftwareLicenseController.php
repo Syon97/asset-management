@@ -14,14 +14,14 @@ class SoftwareLicenseController extends Controller
 {
     public function behaviors()
     {
-        return [
+        return array_merge(parent::behaviors(), [
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [
                     'unassign' => ['POST'],
                 ],
             ],
-        ];
+        ]);
     }
 
     public function actionIndex()
